@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <string.h>
 #include <sys/time.h>
+#include <limits.h>
+
 
 //Parámetros del sistema
 #define PAGE_SIZE          4096U          //4 KiB
@@ -109,6 +111,8 @@ void tlb_init(void)
         -use_seq: contador de uso creciente (para LRU).
     Restricción: máximo 3 variables apuntador locales en esta función.
  */
+
+/*
 void tlb_lookup_and_update(uint32_t vaddr,
                            uint32_t page,
                            uint32_t offset,
@@ -118,13 +122,13 @@ void tlb_lookup_and_update(uint32_t vaddr,
                            void **replaced_address,
                            unsigned long use_seq)
 {
-    unsigned char *entry = tlb_base;      /* 1er apuntador local */
-    unsigned char *empty_entry = NULL;    /* 2do apuntador local */
-    unsigned char *lru_entry = NULL;      /* 3er apuntador local */
+    unsigned char *entry = tlb_base;      //1er apuntador local
+    unsigned char *empty_entry = NULL;    // 2do apuntador local
+    unsigned char *lru_entry = NULL;      // 3er apuntador local
 
     unsigned long lru_value = 0;
 
-/* Búsqueda en TLB y selección de LRU / entrada vacía */
+//Búsqueda en TLB y selección de LRU / entrada vacía
 for (int i = 0; i < TLB_MAX_ENTRIES; ++i) {
     // Accedemos al campo 'valid' de la entrada actual para verificar si está válida
     if (*(int*)(entry + FIELD_VALID)) {
@@ -176,6 +180,74 @@ for (int i = 0; i < TLB_MAX_ENTRIES; ++i) {
     *((uint32_t *)(entry + FIELD_OFF_BIN)) = offset_bin;
     *((unsigned long *)(entry + FIELD_LAST_USED)) = use_seq;
 }
+
+*/
+
+void tlb_lookup_and_update(uint32_t vaddr,
+                           uint32_t page,
+                           uint32_t offset,
+                           uint32_t page_bin,
+                           uint32_t offset_bin,
+                           int *hit,
+                           void **replaced_address,
+                           unsigned long use_seq)
+{
+    unsigned char *entry = tlb_base;      /* 1er apuntador local */
+    unsigned char *empty_entry = NULL;    /* 2do apuntador local */
+    unsigned char *lru_entry = NULL;      /* 3er apuntador local */
+    unsigned long lru_value = ULONG_MAX;  /* Valor inicial alto para LRU */
+
+    /* Búsqueda en TLB y selección de LRU / entrada vacía */
+    for (int i = 0; i < TLB_MAX_ENTRIES; ++i) {
+        if (*((int *)(entry + FIELD_VALID))) {
+            uint32_t *stored_vaddr = (uint32_t *)(entry + FIELD_VADDR);
+            unsigned long *last_used = (unsigned long *)(entry + FIELD_LAST_USED);
+
+            if (*stored_vaddr == vaddr) {
+                /* TLB Hit */
+                *hit = 1;
+                *replaced_address = NULL;
+                *last_used = use_seq; /* Actualizamos LRU */
+                return;
+            }
+
+            /* Evaluamos si la entrada actual tiene el valor de last_used más bajo (LRU) */
+            if (*last_used < lru_value) {
+                lru_entry = entry;
+                lru_value = *last_used;
+            }
+        } else {
+            /* Encontramos una entrada vacía */
+            if (empty_entry == NULL) {
+                empty_entry = entry;
+            }
+        }
+        entry += TLB_ENTRY_SIZE;
+    }
+
+    /* Si llegamos aquí, es Miss */
+    *hit = 0;
+
+    if (empty_entry != NULL) {
+        /* Hay hueco libre: no hay reemplazo */
+        entry = empty_entry;
+        *replaced_address = NULL;
+    } else {
+        /* TLB lleno: reemplazamos la menos usada recientemente */
+        entry = lru_entry;
+        *replaced_address = (void *)entry;
+    }
+
+    /* Escritura de la nueva entrada con solo 3 punteros locales */
+    *((int *)(entry + FIELD_VALID)) = 1;
+    *((uint32_t *)(entry + FIELD_VADDR)) = vaddr;
+    *((uint32_t *)(entry + FIELD_PAGE_DEC)) = page;
+    *((uint32_t *)(entry + FIELD_OFF_DEC)) = offset;
+    *((uint32_t *)(entry + FIELD_PAGE_BIN)) = page_bin;
+    *((uint32_t *)(entry + FIELD_OFF_BIN)) = offset_bin;
+    *((unsigned long *)(entry + FIELD_LAST_USED)) = use_seq;  /* Asignamos el contador de uso */
+}
+
 
 /* ------------------------------------------------------------------------- */
 /* Función principal                                                         */
@@ -294,10 +366,12 @@ int main(void)
         if (replaced_address == NULL) {
             printf("Politica de reemplazo: 0x0\n");
         } else {
-            printf("Politica de reemplazo: %p\n", replaced_address);
+            printf("--------------Politica de reemplazo: %p\n", replaced_address);
         }
 
         printf("Tiempo: %.6f segundos\n", elapsed);
+        printf("\n");
+
     }
 
     /* Liberar memoria del TLB (no hay garbage collector 😢) */
