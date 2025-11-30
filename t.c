@@ -28,10 +28,10 @@
 #define OFF_LRU      (OFF_OFF_BIN + OFF_BIN_SIZE)
 #define SLOT_SIZE    (OFF_LRU + (unsigned int)sizeof(uint32_t))
 
-/* Comprobación estática simple (no fatal en tiempo de compilación) */
-#if (SLOT_SIZE * TLB_MAX_ENTRIES) > TLB_MAX_BYTES
-#warning "SLOT_SIZE * TLB_MAX_ENTRIES excede TLB_MAX_BYTES; ajustar tamaños"
-#endif
+/* Nota: la comprobación que estaba aquí usando #if con sizeof(...) fue
+   removida porque el preprocesador no puede evaluar tokens como
+   "(unsigned int)sizeof(...)" durante #if. En su lugar se realiza una
+   comprobación simple en tiempo de ejecución dentro de init_tlb(). */
 
 /* Variables globales del TLB en heap */
 static char *tlb_heap = NULL;        /* puntero a inicio del TLB (heap) */
@@ -95,6 +95,12 @@ void init_tlb(void)
         perror("malloc TLB");
         exit(EXIT_FAILURE);
     }
+
+    /* Comprobación en tiempo de ejecución del tamaño total */
+    if ((SLOT_SIZE * TLB_MAX_ENTRIES) > TLB_MAX_BYTES) {
+        fprintf(stderr, "warning: SLOT_SIZE * TLB_MAX_ENTRIES excede TLB_MAX_BYTES; ajustar tamaños\n");
+    }
+
     /* marcar entradas como vacías: page = UINT32_MAX */
     char *base = tlb_heap;
     char *cur;
