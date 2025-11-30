@@ -111,7 +111,6 @@ void tlb_init(void)
         -use_seq: contador de uso creciente (para LRU).
     Restricción: máximo 3 variables apuntador locales en esta función.
  */
-
 void tlb_lookup_and_update(uint32_t vaddr,
                            uint32_t page,
                            uint32_t offset,
@@ -121,29 +120,31 @@ void tlb_lookup_and_update(uint32_t vaddr,
                            void **replaced_address,
                            unsigned long use_seq)
 {
-    unsigned char *entry = tlb_base;      /* 1er apuntador local */
-    unsigned char *empty_entry = NULL;    /* 2do apuntador local */
-    unsigned char *lru_entry = NULL;      /* 3er apuntador local */
+    unsigned char *entry = tlb_base;      /* 1er puntero local */
+    unsigned char *empty_entry = NULL;    /* 2do puntero local */
+    unsigned char *lru_entry = NULL;      /* 3er puntero local */
     unsigned long lru_value = ULONG_MAX;  /* Valor inicial alto para LRU */
 
     /* Búsqueda en TLB y selección de LRU / entrada vacía */
     for (int i = 0; i < TLB_MAX_ENTRIES; ++i) {
         if (*((int *)(entry + FIELD_VALID))) {
-            uint32_t *stored_vaddr = (uint32_t *)(entry + FIELD_VADDR);
-            unsigned long *last_used = (unsigned long *)(entry + FIELD_LAST_USED);
+            /* Leemos last_used sin crear otro puntero */
+            unsigned long current_last_used =
+                *((unsigned long *)(entry + FIELD_LAST_USED));
 
-            if (*stored_vaddr == vaddr) {
+            if (*(uint32_t *)(entry + FIELD_VADDR) == vaddr) {
                 /* TLB Hit */
                 *hit = 1;
                 *replaced_address = NULL;
-                *last_used = use_seq; /* Actualizamos LRU */
+                /* Actualizamos LRU directamente sobre la memoria */
+                *((unsigned long *)(entry + FIELD_LAST_USED)) = use_seq;
                 return;
             }
 
-            /* Evaluamos si la entrada actual tiene el valor de last_used más bajo (LRU) */
-            if (*last_used < lru_value) {
+            /* Evaluamos LRU usando el valor leído */
+            if (current_last_used < lru_value) {
                 lru_entry = entry;
-                lru_value = *last_used;
+                lru_value = current_last_used;
             }
         } else {
             /* Encontramos una entrada vacía */
@@ -167,15 +168,16 @@ void tlb_lookup_and_update(uint32_t vaddr,
         *replaced_address = (void *)entry;
     }
 
-    /* Escritura de la nueva entrada con solo 3 punteros locales */
+    /* Escritura de la nueva entrada */
     *((int *)(entry + FIELD_VALID)) = 1;
     *((uint32_t *)(entry + FIELD_VADDR)) = vaddr;
     *((uint32_t *)(entry + FIELD_PAGE_DEC)) = page;
     *((uint32_t *)(entry + FIELD_OFF_DEC)) = offset;
     *((uint32_t *)(entry + FIELD_PAGE_BIN)) = page_bin;
     *((uint32_t *)(entry + FIELD_OFF_BIN)) = offset_bin;
-    *((unsigned long *)(entry + FIELD_LAST_USED)) = use_seq;  /* Asignamos el contador de uso */
+    *((unsigned long *)(entry + FIELD_LAST_USED)) = use_seq;
 }
+
 
 
 /* ------------------------------------------------------------------------- */
