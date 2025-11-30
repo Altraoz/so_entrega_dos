@@ -39,17 +39,17 @@ void dec_to_bin(unsigned long value, int bits, char *out_buffer)
 // Binario a decimal
 unsigned long bin_to_dec(const char *bin_str)
 {
-    unsigned long result = 0;
+    unsigned long resultado = 0;
     size_t len = strlen(bin_str);
 
     for (size_t i = 0; i < len; ++i) {
         char c = bin_str[len - 1 - i];
         if (c == '1') {
-            unsigned long power_of_two = (1UL << i);
-            result += power_of_two;
+            unsigned long potencia = (1UL << i);
+            resultado += potencia;
         }
     }
-    return result;
+    return resultado;
 }
 
 // TLB
@@ -229,7 +229,7 @@ int main(void)
         if (replaced_address == NULL) {
             printf("Politica de reemplazo: 0x0\n");
         } else {
-            printf("--------------Politica de reemplazo: %p\n", replaced_address);
+            printf("Politica de reemplazo: %p\n", replaced_address);
         }
 
         printf("Tiempo: %.6f segundos\n", elapsed);
