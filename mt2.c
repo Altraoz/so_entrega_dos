@@ -112,77 +112,6 @@ void tlb_init(void)
     Restricción: máximo 3 variables apuntador locales en esta función.
  */
 
-/*
-void tlb_lookup_and_update(uint32_t vaddr,
-                           uint32_t page,
-                           uint32_t offset,
-                           uint32_t page_bin,
-                           uint32_t offset_bin,
-                           int *hit,
-                           void **replaced_address,
-                           unsigned long use_seq)
-{
-    unsigned char *entry = tlb_base;      //1er apuntador local
-    unsigned char *empty_entry = NULL;    // 2do apuntador local
-    unsigned char *lru_entry = NULL;      // 3er apuntador local
-
-    unsigned long lru_value = 0;
-
-//Búsqueda en TLB y selección de LRU / entrada vacía
-for (int i = 0; i < TLB_MAX_ENTRIES; ++i) {
-    // Accedemos al campo 'valid' de la entrada actual para verificar si está válida
-    if (*(int*)(entry + FIELD_VALID)) {
-        // Obtenemos la dirección virtual almacenada en el TLB y el último valor de uso (para LRU)
-        // Si la dirección virtual almacenada en el TLB coincide con la dirección solicitada (vaddr)
-        if (*(uint32_t *)(entry + FIELD_VADDR) == vaddr) {
-            // TLB Hit: Se encontró la dirección en el TLB
-            *hit = 1;  // Marcamos que fue un "hit"
-            *replaced_address = NULL;  // No hubo reemplazo de entrada
-            *(unsigned long *)(entry + FIELD_LAST_USED) = use_seq;  // Actualizamos el contador de uso para la política LRU
-            return;  // Terminamos la búsqueda ya que encontramos la dirección en el TLB
-        }
-
-        // Si la entrada no es un hit, evaluamos si esta es la menos usada recientemente
-        if (lru_entry == NULL || *(uint32_t *)(entry + FIELD_VADDR) < lru_value) {
-            lru_entry = entry;  // Actualizamos la entrada que es la menos usada
-            lru_value = *(uint32_t *)(entry + FIELD_VADDR);
-        }
-    } else {
-        // Si encontramos una entrada vacía (no válida), la almacenamos
-        if (empty_entry == NULL) {
-            empty_entry = entry;  // Marcamos la primera entrada vacía que encontramos
-        }
-    }
-    // Movemos al siguiente bloque de memoria en el TLB para la siguiente iteración
-    entry += TLB_ENTRY_SIZE;
-}
-
-
-    //AÑADIR CONTADOR A CADA POSICIÓN
-    
-    // Si llegamos aquí, es Miss
-    *hit = 0;
-    if (empty_entry != NULL) {
-        // Hay hueco libre: no hay reemplazo
-        entry = empty_entry;
-        *replaced_address = NULL;
-    } else {
-        // TLB lleno: reemplazamos la menos usada recientemente
-        entry = lru_entry;
-        *replaced_address = (void *)entry;
-    }
-    // Insertar los nuevos datos en la entrada seleccionada
-    *((int *)(entry + FIELD_VALID)) = 1;
-    *((uint32_t *)(entry + FIELD_VADDR)) = vaddr;
-    *((uint32_t *)(entry + FIELD_PAGE_DEC)) = page;
-    *((uint32_t *)(entry + FIELD_OFF_DEC)) = offset;
-    *((uint32_t *)(entry + FIELD_PAGE_BIN)) = page_bin;
-    *((uint32_t *)(entry + FIELD_OFF_BIN)) = offset_bin;
-    *((unsigned long *)(entry + FIELD_LAST_USED)) = use_seq;
-}
-
-*/
-
 void tlb_lookup_and_update(uint32_t vaddr,
                            uint32_t page,
                            uint32_t offset,
@@ -373,8 +302,6 @@ int main(void)
         printf("\n");
 
     }
-
-    /* Liberar memoria del TLB (no hay garbage collector 😢) */
     free(tlb_base);
     return 0;
 }
