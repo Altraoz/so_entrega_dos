@@ -78,3 +78,7 @@ por que ?
 
 el error de repetidas se da si el nuevo valor a ingresar es menro al menor presente.
 en este punto se imprime en el mismo sitio  no en el menos usado
+
+
+
+# OLIVDEN TODO QUEDÓ SOLUCIONADO
