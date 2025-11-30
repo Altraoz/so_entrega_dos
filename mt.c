@@ -30,7 +30,7 @@ static unsigned long global_use_counter = 0;
 void dec_to_bin(unsigned long value, int bits, char *out_buffer)
 {
     for (int i = bits - 1; i >= 0; --i) {
-        unsigned long bit = (value >> i) & 1UL;\
+        unsigned long bit = (value >> i) & 1UL;
         out_buffer[bits - 1 - i] = bit ? '1' : '0';
     }
     out_buffer[bits] = '\0';
