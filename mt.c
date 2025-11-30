@@ -229,7 +229,7 @@ int main(void)
         if (replaced_address == NULL) {
             printf("Politica de reemplazo: 0x0\n");
         } else {
-            printf("--------------Politica de reemplazo: %p\n", replaced_address);
+            printf("Politica de reemplazo: %p\n", replaced_address);
         }
 
         printf("Tiempo: %.6f segundos\n", elapsed);
